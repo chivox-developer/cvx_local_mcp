@@ -1,0 +1,48 @@
+{
+  "name": "chivox-local-mcp",
+  "version": "1.0.0",
+  "description": "Stdio MCP proxy that forwards to remote Chivox evaluation HTTP MCP server",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "chivox-local-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist/"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.chivox.com/CLOUD_DEV/cvx_local_mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "chivox",
+    "speech-evaluation",
+    "pronunciation",
+    "streaming-audio"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc && chmod +x dist/index.js",
+    "rebuild": "npm run clean && npm run build",
+    "start": "node dist/index.js",
+    "deploy": "bash scripts/build.sh",
+    "publish:check": "bash scripts/build.sh --check",
+    "publish:release": "bash scripts/build.sh --publish",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run rebuild"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.7.0"
+  }
+}
