@@ -1,4 +1,7 @@
-# cvx_local_mcp
+[English](./README_EN.md) | **中文**
+
+# chivox-local-mcp
+
 驰声语音评测 MCP 本地代理 — 让 AI 助手具备语音评测能力。
 
 通过 [Model Context Protocol](https://modelcontextprotocol.io/) 将驰声评测服务接入 Claude Desktop、Claude Code、Cursor 等 AI 工具，支持中英文单词、句子、段落评测，以及实时麦克风录音评测。
@@ -120,12 +123,13 @@ sudo apt-get install sox
 # Windows
 # 从 https://sox.sourceforge.net/ 下载安装，并添加到 PATH
 ```
+
 ### 第 2 步：安装
 
 **方式一：源码安装（推荐开发者）**
 
 ```bash
-git clone https://github.com/chivox-developer/cvx_local_mcp.git
+git clone https://git.chivox.com/CLOUD_DEV/cvx_local_mcp.git
 cd cvx_local_mcp
 npm install
 npm run build
@@ -134,7 +138,7 @@ npm run build
 **方式二：构建脚本安装**
 
 ```bash
-git clone https://github.com/chivox-developer/cvx_local_mcp.git
+git clone https://git.chivox.com/CLOUD_DEV/cvx_local_mcp.git
 cd cvx_local_mcp
 bash scripts/build.sh
 ```
@@ -166,7 +170,20 @@ AI：评测结果：总分 92，准确度 95，流利度 88...
 - **macOS**：`~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**：`%APPDATA%\Claude\claude_desktop_config.json`
 
-**源码安装方式：**
+**源码安装方式（使用默认云服务）：**
+
+```json
+{
+  "mcpServers": {
+    "chivox": {
+      "command": "node",
+      "args": ["/absolute/path/to/cvx_local_mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+**源码安装方式（指定自定义服务地址）：**
 
 ```json
 {
@@ -189,28 +206,25 @@ AI：评测结果：总分 92，准确度 95，流利度 88...
 {
   "mcpServers": {
     "chivox": {
-      "command": "chivox-local-mcp",
-      "env": {
-        "MCP_REMOTE_URL": "http://your-server:8080",
-        "MCP_API_KEY": "your-api-key"
-      }
+      "command": "chivox-local-mcp"
     }
   }
 }
 ```
 
-> 将路径和环境变量替换为实际值。`MCP_API_KEY` 仅在远程服务要求认证时需要。
+> 不设置 `MCP_REMOTE_URL` 时默认连接 `https://mcp.cloud.chivox.com`。`MCP_API_KEY` 仅在远程服务要求认证时需要。
 
 ### Claude Code (CLI)
 
 ```bash
-# 源码安装方式
+# 源码安装方式（使用默认云服务）
 claude mcp add chivox -- \
-  env MCP_REMOTE_URL=http://your-server:8080 \
-  env MCP_API_KEY=your-api-key \
   node /absolute/path/to/cvx_local_mcp/dist/index.js
 
-# 全局安装方式
+# 全局安装方式（使用默认云服务）
+claude mcp add chivox -- chivox-local-mcp
+
+# 指定自定义服务地址
 claude mcp add chivox -- \
   env MCP_REMOTE_URL=http://your-server:8080 \
   env MCP_API_KEY=your-api-key \
@@ -232,7 +246,7 @@ claude mcp list
 任何支持 MCP 协议的客户端均可接入，只需配置：
 
 - **command**：`node /path/to/dist/index.js` 或 `chivox-local-mcp`
-- **环境变量**：`MCP_REMOTE_URL`（必填）、`MCP_API_KEY`（选填）
+- **环境变量**：`MCP_REMOTE_URL`（选填，默认 `https://mcp.cloud.chivox.com`）、`MCP_API_KEY`（选填）
 
 ---
 
@@ -510,10 +524,10 @@ create_stream_session → start_recording → [用户朗读] → stop_recording
 
 | 变量 | 必填 | 说明 |
 |---|---|---|
-| `MCP_REMOTE_URL` | 是 | 远程驰声 MCP 服务地址，如 `http://your-server:8080` |
+| `MCP_REMOTE_URL` | 否 | 远程驰声 MCP 服务地址（默认 `https://mcp.cloud.chivox.com`） |
 | `MCP_API_KEY` | 否 | API 认证密钥（远程服务开启认证时需要） |
 
-环境变量通过 AI 客户端配置中的 `env` 字段传入，无需在系统中全局设置。
+如未设置 `MCP_REMOTE_URL`，将自动连接驰声官方云服务 `https://mcp.cloud.chivox.com`。环境变量通过 AI 客户端配置中的 `env` 字段传入，无需在系统中全局设置。
 
 ---
 
@@ -553,7 +567,7 @@ nvm use 18
 
 A: 排查步骤：
 
-1. 检查 `MCP_REMOTE_URL` 格式是否正确（需包含协议和端口，如 `http://your-server:8080`）
+1. 检查 `MCP_REMOTE_URL` 格式是否正确（需包含协议和端口，如 `http://your-server:8080`）；未设置时默认为 `https://mcp.cloud.chivox.com`
 2. 确认远程服务已启动且网络可达：`curl http://your-server:8080`
 3. 如有防火墙，确认端口已放行
 4. 检查 `MCP_API_KEY` 是否正确（如远程服务要求认证）
@@ -650,14 +664,14 @@ npm run publish:release   # 编译 + 检查 + 发布到 npm
 
 ### 源码核心模块
 
-`src/index.ts` 约 385 行，结构清晰：
+`src/index.ts` 约 378 行，结构清晰：
 
 | 模块 | 行数 | 功能 |
 |---|---|---|
 | 日志 | 15–23 | 结构化 JSON 日志输出到 stderr |
 | 会话管理 | 25–73 | `RecordingSession` 接口、Buffer 管理、定时切片推送 |
 | 本地工具定义 | 77–118 | 三个本地 tool 的 JSON Schema 定义 |
-| 主程序 | 124–385 | 远程连接、重连逻辑、工具路由、优雅关闭 |
+| 主程序 | 124–378 | 远程连接、重连逻辑、工具路由、优雅关闭 |
 
 ### 关键实现细节
 

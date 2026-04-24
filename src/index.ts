@@ -122,15 +122,7 @@ const LOCAL_TOOL_NAMES = new Set(LOCAL_TOOLS.map(t => t.name));
 // ========== 主程序 ==========
 
 async function main() {
-  const remoteUrlEnv = process.env.MCP_REMOTE_URL;
-  if (!remoteUrlEnv) {
-    console.error(
-      "缺少环境变量 MCP_REMOTE_URL\n" +
-        "示例: MCP_REMOTE_URL=http://your-server:8080"
-    );
-    process.exit(1);
-  }
-  const remoteUrl: string = remoteUrlEnv;
+  const remoteUrl: string = process.env.MCP_REMOTE_URL || "https://mcp.cloud.chivox.com";
 
   const apiKey = process.env.MCP_API_KEY;
   const httpHeaders: Record<string, string> = {};
