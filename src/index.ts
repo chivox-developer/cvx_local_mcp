@@ -37,6 +37,7 @@ interface RecordingSession {
 }
 
 const activeSessions = new Map<string, RecordingSession>();
+const sessionWsUrls = new Map<string, string>();
 
 function startPushingChunks(session: RecordingSession) {
   session.pushTimer = setInterval(() => {
@@ -190,6 +191,23 @@ async function main() {
       const result = await callWithReconnect(() =>
         remoteClient.callTool(request.params)
       );
+      // 解析响应，保存 ws_url
+      try {
+        const content = (result as any)?.content;
+        if (Array.isArray(content)) {
+          for (const item of content) {
+            if (item.type === "text" && typeof item.text === "string") {
+              const parsed = JSON.parse(item.text);
+              if (parsed.session_id && parsed.ws_url) {
+                sessionWsUrls.set(parsed.session_id, parsed.ws_url);
+                log("info", "已保存会话 ws_url", { session_id: parsed.session_id, ws_url: parsed.ws_url });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        log("warn", "解析 create_stream_session 响应失败", { error: String(e) });
+      }
       return result;
     }
 
@@ -207,8 +225,10 @@ async function main() {
         return { content: [{ type: "text" as const, text: JSON.stringify({ error: "session already recording" }) }], isError: true };
       }
 
-      // 将 remoteUrl 转换为 WebSocket 地址，拼接 /ws/audio/{sessionId}
-      const wsUrl = remoteUrl.replace(/^http/, "ws").replace(/\/+$/, "") + `/ws/audio/${sessionId}`;
+      // 优先使用 create_stream_session 返回的 ws_url，否则降级拼接
+      const wsUrl = sessionWsUrls.get(sessionId)
+        ?? remoteUrl.replace(/^http/, "ws").replace(/\/+$/, "") + `/ws/audio/${sessionId}`;
+      sessionWsUrls.delete(sessionId);
       const wsHeaders: Record<string, string> = {};
       if (apiKey) {
         wsHeaders["Authorization"] = `Bearer ${apiKey}`;
